@@ -1,0 +1,483 @@
+---
+title: "7CS039 Assessment Statistic In Data Science" 
+author: "Njinju Zilefac Fogap" 
+format: html 
+editor: visual
+---
+
+# DATA SOURCE :
+
+The data set for this project is 'Survival from Malignant Melanoma' provided by **University Of Wolverhampton** as part of an assessment for this module (Statistics in Data Science).
+
+# OBJECTIVE :
+
+The objective of this report is to perform an exploratory data analysis (understanding trends, distribution, relationships between variables and statistical hypothesis testing) of the data set 'Survival from Malignant Melanoma' , which is a data set that consists of measurements made on patients with malignant melanoma. Features of the data was collected at University Hospital of Odense, Denmark during the period 1962-1977.
+
+# LIBRARIES :
+
+```{r message = FALSE , warningS = FALSE , echo = TRUE}
+library(skimr) 
+library(ggplot2)
+library(gridExtra)
+library(dplyr)
+library(patchwork)
+```
+
+# EXPLORATORY DATA ANALYSIS
+
+## DATA INFORMATION :
+
+In his section, i want to get information and analyse the structure of the data set so it would help me build a reliable, accurate and meaningful data insight which is very crucial in exploratory data analysis and hypothesis testing.
+
+```{r message = FALSE , warningS = FALSE , echo = TRUE}
+
+attach(melanoma)    
+head(melanoma) 
+```
+
+```{r message = FALSE , warningS = FALSE , echo = TRUE}
+str(melanoma) ## getting the structure of the data set.
+```
+
+## META DATA :
+
+-   time - Survival time in days since the operation.
+
+-   status - The patients status at the end of the study. 1 indicates that they had died from melanoma, 2 indicates that they were still alive and 3 indicates that they had died from causes unrelated to their melanoma.
+
+-   sex - The patients sex; 1=male, 0=female.
+
+-   age - Age in years at the time of the operation.
+
+-   year - Year of operation.
+
+-   thickness - Tumour thickness in mm.
+
+-   ulcer - Indicator of ulceration; 1=present, 0=absent.
+
+From above we can see that our data set, Survival from Malignant Melanoma, has 205 observations and 8 variables. X, time, status, sex, age, year and ulcer are of type integer (int) and thickness is a numeric variable. Here, can see that our variable are not of the right data type since from the meta data ulcer , status and sex are categorical. Therefore we need to convert them to the right data data.
+
+## CONVERT TO CARTEGORICAL :
+
+```{r message = FALSE , warningS = FALSE , echo = TRUE}
+
+melanoma <- melanoma %>%
+  mutate(
+    
+    status = factor(status, levels = c(1, 2, 3), 
+                    labels = c("Died from melanoma", "Alive", "Died from other causes")),
+    sex = factor(sex, levels = c(0, 1), labels = c("Female", "Male")),
+    ulcer = factor(ulcer, levels = c(0, 1), labels = c("Absent", "Present"))
+  )
+
+head(melanoma)
+```
+
+## CHECK FOR MISSNG VALUES:
+
+```{r message = FALSE , warningS = FALSE , echo = TRUE}
+colSums(is.na(melanoma))
+```
+
+From above, there are no missing values and our data set is complete.
+
+## SUMMARY SATISTICS :
+
+```{r message = FALSE , warningS = FALSE, echo = TRUE}
+
+summary(melanoma)
+```
+
+```{r message = FALSE , warningS = FALSE, echo = TRUE}
+
+skim(melanoma)
+```
+
+From the above summary statistic we observe the following from each variables :
+
+-   **Thickness :** For the thickness of the tumour, the min = 0.10mm and max = 17.42mm and a mean of 2.919mm, this indicates that majority of the patients had 2.919mm thickness of their tumour which is relative low compared to the largest**(17.42mm)** tumour gotten from the patient. Standard deviation of 2.959. The standard deviation is low indicating that the data point are not distributed far from the mean which is good. Hence showing no outliers . we will investigate this more in our box plot.
+
+-   **Age** : The youngest patient suffering from Malignant Melanoma was of age = 4years and the oldest patient was aged 97years showing a wide range in age distribution. Majority of patients that had this disease was of age 52years, this shows that majority of individual having this disease from this data are adults. The standard deviation is 16.67 which is a bit high indicate the existence of outliers, we will further check this in our box plot.
+
+-   **Sex** : We can see that the more female = 126 that suffered from Malignant Melanoma as compared to male = 79. This suggest a slight imbalance of the gender distribution in this data set.
+
+-   **Status :** From the above summary statistics, we can see that 134 patients was still alive, 71 had died (57 died from Malignant Melanoma and 14 died from other causes other than Malignant Melanoma). A majority number of patients who are still alive suggesting an early treatment or detection from this population.
+
+-   **Ulcer** : We noticed that 115 patients had no ulcer and 90 didn't have ulcer.
+
+-   **Time** : survival time in days ranges from a min of 10 to a max of 5565(which is about 16years). The SD = 2152 which is a large suggesting that it is skewed which we will investigate more using histogram and box plot.
+
+-   **Year** : The min year = 1962 and max year = 1977. Indicating the the data was collected over a duration of 15years.
+
+**Conclusion for summary statistics :**
+
+-   Presence of outliers.
+
+-   Imbalance distribution for some categorical variable.
+
+-   No missing values.
+
+## **GRAPHS AND DISTRIBUT**IONS :
+
+### HISTOGRAM
+
+#### A. Numerical variables :
+
+```{r message = FALSE , warningS = FALSE}
+## Selecting all numeric variablez
+numeric_columns <- melanoma[, c("age", "thickness", "time")] 
+
+# Create list of histogram plots
+histograms <- lapply(names(numeric_columns), function(col) {
+  
+  ggplot(melanoma, aes_string(x = col)) +
+    geom_histogram(binwidth = 10, fill = "grey", color = "black", alpha = 0.7) +
+    labs(title = paste("Histogram of", col), x = col, y = "Frequency") +
+    theme_minimal()
+})
+
+# Arrange histograms in a grid
+do.call(grid.arrange, c(histograms, ncol = 2))
+
+```
+
+Ideally we can't display categorical variable using histogram. Therefore i decided to use just numerical variables to see how they are distributed. We can either use a bar chart or a tables on categorical variable to do comparison on their distinct variables.
+
+From the above distribution, we can observe the following :
+
+-   **Age** : From above we can see that our age is weakly normally distributed as it is slightly skewed to the left. This was noticed about from it's high standard deviation from our statistics summary above. This is most likely cause by the presence of outliers caused the dispersion of the age, ranging from as young = 4years to old = 95years.:
+
+-   **Thickness** : we can see that thickness is heavily skewed to the right. The are some extreme values usually caused by outliers above 10mm. Majority of the data is seem distributed close to 0mm.The data set being skewed to the right indicates that majority of the tumour gotten from the patients were thin as compare the very thick ones.
+
+-   **Time** : We can see that time has a lot of spike this is because of the right range of values it has as seen in the summary statistics above. This maybe due to the nature of the variable. We can use time series visualization to gain more insights against other variables in our data set.
+
+    #### B. CARTEGORIAL :
+
+    ```{r message = FALSE , warningS = FALSE}
+    # Select only categorical columns
+    categorical_columns <- melanoma[, sapply(melanoma, is.factor) | sapply(melanoma, is.character)]
+
+    # Create bar plots for each categorical variable
+    bar_plots <- lapply(names(categorical_columns), function(col) {
+      ggplot(melanoma, aes_string(x = col)) +
+        geom_bar(fill = "steelblue", color = "grey", alpha = 0.7) +
+        labs(title = paste("Bar chart of", col), x = col, y = "Count") +
+        theme_minimal(base_size = 10) +
+        theme(
+          plot.title = element_text(hjust = 0.5, size = 16),
+          axis.text.x = element_text(angle = 45, hjust = 1)  # Rotate x-axis labels if needed
+        )
+    })
+
+    #Arrange bar plots in a grid (adjust ncol as needed)
+    do.call(grid.arrange, c(bar_plots, ncol = 2))  # You can change ncol to organize them as you prefer.
+
+    ```
+
+From the above we noticed the following :
+
+-   The were more female than male for this experiment.
+
+-   Majority of individuals had no ulcer (115 patients).
+
+-   Many patients stayed alive compare to those who died during the experiment.
+
+### BOXPLOT
+
+```{r message = FALSE , warningS = FALSE}
+
+numeric_columns <- melanoma[, sapply(melanoma, is.numeric)]
+
+boxplots <- lapply(names(numeric_columns), function(col) {
+  ggplot(melanoma, aes_string(y = col)) +
+    geom_boxplot(fill = "grey", color = "black", alpha = 0.1) +
+    labs(title = paste("Boxplot of", col), y = col) +
+    theme_minimal()
+})
+
+# Arrange boxplots in a grid
+do.call(grid.arrange, c(boxplots, ncol = 4))
+
+```
+
+-   **Age** : We can see that 50% of the patient suffering from Malignant Melanoma are between the age 42 and 65 years old as indicated for the interquartile range on the box plot above. 25% are the patients are above the age 65 and bellow 42. We can also few outliers at the lower end of the box plot. aside that we can see that the age variable is clean.
+
+-   **Thickness** : From above 50% of the patients had their Tumour thickness between 1.09mm and 3.33mm. 25% had above 3.33mm and bellow 1.09mm. The thickness is heavily skewed to the right as seen also in the histogram as most of the data is close to 0mm. we can also see that the is a lot of outliers at the upper end of the box plot despite the low standard deviation as seen in the summary statistics above.
+
+-   **Time** : From above 50% of the survival time was between 1525days and 3042days. 20% was above 3042days and bellow 1525days. we can see few outliers at the upper end of beyond the whisker. This outliers indicate extreme survival days and should be investigated if the are valid or true values.
+
+## CORRELATION AND REGRESSION ANALYSIS
+
+### SCATTER PLOT :
+
+```{r message = FALSE , warningS = FALSE}
+
+# Create scatter plot for time vs thickness
+plot1 <- ggplot(melanoma, aes(x = thickness, y = time)) +
+  geom_point(color = "blue", alpha = 0.4, size = 3) +
+  geom_smooth(method = "lm", color = "red", se = FALSE) +
+  labs(title = "Time vs Thickness", x = "Thickness (mm)", y = "Time (days)") +
+  theme_minimal()
+
+# Create scatter plot for time vs age
+plot2 <- ggplot(melanoma, aes(x = age, y = time)) +
+  geom_point(color = "green", alpha = 0.4 , size = 3) +
+  geom_smooth(method = "lm", color = "red", se = FALSE) +
+  labs(title = "Time vs Age", x = "Age (years)", y = "Time (days)") +
+  theme_minimal()
+
+# Create scatter plot for thickness vs age
+plot3 <- ggplot(melanoma, aes(x = age, y = thickness)) +
+  geom_point(color = "purple", alpha = 0.4,  size = 3) +
+  geom_smooth(method = "lm", color = "red", se = FALSE) +
+  labs(title = "Thickness vs Age", x = "Age (years)", y = "Thickness (mm)") +
+  theme_minimal()
+
+# Combine the plots into one section
+combined_plot <- plot1 + plot2 + plot3 + 
+  plot_layout(ncol = 1) # Arrange plots vertically
+
+options(repr.plot.width = 10, repr.plot.height = 100)
+
+# Display the combined plot
+print(combined_plot)
+
+
+```
+
+### PEARSON CORREATION
+
+```{r message = FALSE , warningS = FALSE}
+
+numeric_columns <- melanoma[, c("age", "thickness", "time")] 
+cor(numeric_columns , method = 'pearson')
+```
+
+### LINEAR REGRESSION MODEL
+
+#### 1. TIME \~ THICKNESS :
+
+```{r message = FALSE , warningS = FALSE}
+
+TT_model = lm(formula = time~thickness)
+
+summary(TT_model)
+```
+
+#### 2. TIME \~ AGE:
+
+```{r message = FALSE , warningS = FALSE}
+
+TA_model = lm(formula = time~age)
+
+summary(TA_model)
+
+```
+
+#### 3. THICKNESS AND AGE
+
+```{r message = FALSE , warningS = FALSE}
+
+THA_model = lm(formula = thickness~age)
+
+summary(THA_model)
+```
+
+### FEEDBACK ON CORRELATION AND REGRESSION ANALYSIS:
+
+From the above correlation and regression analysis, we observe the following:
+
+-   There exist a correlation between the different numerical variables (age, thickness, time) since our Persian correlation coefficient is between 0 and 1.
+
+-   The is a very weak negative linear relationship (-0.235) between time and thickness, with a regression coefficient of **time = -89.25 \* thickness + 2413.41 ,** that is for every increase in thickness per unit, time decreases by **89.25.**
+
+-   The is a very weak negative linear relationship (-0.301) between time and age , with a regression coefficient of **time = -20.293\* age + 3217.448** meaning for every 1year increase in age , time predict decreases by **20.293.**
+
+-   The is a very weak positive linear relationship (0.212) between thickness and age, with a regression coefficient of **thickness = 0.03772 \* age + 0.94105** meaning for every 1year increase in the age the predicted thickness increases by **0.03772.**
+
+### HYPOTHESIS TEST :
+
+#### TWO SAMPLE SIGNIFICANCE TEST :
+
+1.  Lets plot to see the relationship between gender of patient and their ages.
+
+```{r message = FALSE , warningS = FALSE}
+qplot(x = sex, y = age,
+      geom = "boxplot", data = melanoma,
+      xlab = "gender of patient",
+      ylab = "age of patient",
+      fill = I("grey"))
+```
+
+Lets now find the mean of both population :
+
+```{r message = FALSE , warningS = FALSE}
+
+melanoma %>%
+  group_by(sex) %>%
+  summarize(num.obs = n(),
+            mean_age = round(mean(age), 0),
+            sd_age = round(sd(age), 0),
+            se_age = round(sd(age) / sqrt(num.obs), 0))
+
+```
+
+Lets test for significance :
+
+**H0 : THE MEAN AGE OF GENDER ARE SAME**
+
+**H1 : THE MEAN AGE OF GENDER ARE DIFFERENT**
+
+H0 = Null hypothesis
+
+H1 = Alternate hypothesis
+
+```{r message = FALSE , warningS = FALSE}
+
+age_t_test <- t.test(age ~ sex, data = melanoma)
+
+age_t_test           
+
+```
+
+**Level of significance = 0,05** and the **p-value = 0,341**. Since the p-value is is above the level of significance we don't not reject the null hypothesis since we do not have enough evidence to show the are significantly different.
+
+2.  Lets plot to see the relationship between gender of patient and their Tumour thickness in mm
+
+    ```{r message = FALSE , warningS = FALSE}
+    qplot(x = sex, y = thickness,
+          geom = "boxplot", data = melanoma,
+          xlab = "gender of patient",
+          ylab = "thickness of gender",
+          fill = I("grey"))
+    ```
+
+    Lets now find the mean of both population :
+
+    ```{r message = FALSE , warningS = FALSE}
+
+    melanoma %>%
+      group_by(sex) %>%
+      summarize(num.obs = n(),
+                mean_thickness = round(mean(thickness), 0),
+                sd_thickness = round(sd(thickness), 0),
+                se_thickness = round(sd(thickness) / sqrt(num.obs), 0))
+    ```
+
+Lets test for significance :
+
+**H0 : THE MEAN TUMOUR THICKNESS OF GENDER ARE SAME**
+
+**H1 : THE MEAN TUMOUR THICKNESS OF GENDER ARE DIFFERENT**
+
+```{r message = FALSE , warningS = FALSE}
+
+thickness_t_test <- t.test(thickness ~ sex, data = melanoma)
+
+thickness_t_test
+```
+
+**Level of significance = 0,05** and **our p-value = 0,01**. Since the p-value is is bellow the level of significance we reject the null hypothesis since our means are significantly different.
+
+3.  Lets plot to see the relationship between gender of patient and their survival time in days.
+
+    ```{r message = FALSE , warningS = FALSE}
+    qplot(x = sex, y = time,
+          geom = "boxplot", data = melanoma,
+          xlab = "gender of patient",
+          ylab = " survival time in day",
+          fill = I("grey"))
+
+    ```
+
+    Lets now find the mean of both population :
+
+    ```{r message = FALSE , warningS = FALSE}
+
+    melanoma %>%
+      group_by(sex) %>%
+      summarize(num.obs = n(),
+                mean_time = round(mean(time), 0),
+                sd_time = round(sd(time), 0),
+                se_time = round(sd(time) / sqrt(num.obs), 0))
+
+    ```
+
+Lets test for significance :
+
+**H0 : THE MEAN SURVIVAL TIME OF GENDER ARE SAME**
+
+**H1 : THE MEAN SURVIVAL TIME OF GENDER ARE DIFFERENT**
+
+```{r message = FALSE , warningS = FALSE}
+
+time_t_test <- t.test(time ~ sex, data = melanoma)
+
+time_t_test
+```
+
+**Level of significance = 0,05** and our **p-value = 0,038.** Since the p-value is is bellow the level of significance we reject the null hypothesis since our means are significantly different.
+
+### QQ-PLOTS :
+
+We use QQ-plots to check for normality , that is seeing if data sets are normally distributed.
+
+**SEX \~ GENDER**
+
+```{r message = FALSE , warningS = FALSE}
+
+p_age <- ggplot(data = melanoma, aes(sample = age))
+#p_age + stat_qq() + stat_qq_line()
+p_age + stat_qq() + stat_qq_line() + facet_grid(. ~ sex)
+
+```
+
+**THICKNESS AND GENDER**
+
+```{r message = FALSE , warningS = FALSE}
+
+p_thickness <- ggplot(data = melanoma, aes(sample = thickness))
+p_thickness + stat_qq() + stat_qq_line() + facet_grid(. ~ sex)
+
+```
+
+**TIME \~ GENDER**
+
+```{r message = FALSE , warningS = FALSE}
+
+p_time <- ggplot(data = melanoma, aes(sample = time))
+p_time + stat_qq() + stat_qq_line() + facet_grid(. ~ sex)
+
+```
+
+The main purpose of the Q-Q (quantile quantile)plot above is to verify if the residuals(error) from the model are normally distributed or not. We observe the following for the different QQ plots:
+
+-   **SEX \~ GENDER :**
+
+    Both group, male and female show some degree of normality of their residuals with some deviation to their tail ends.This deviation can be caused possible by the presence of outliers.
+
+-   **THICKNESS \~ GENDER:**
+
+    From the above QQ plot, both groups shows a deviation from normality, This suggest that thickness has non-normal characteristics suck has outliers and different underlying distributions as we saw in the above summary statistics and box plot.
+
+-   **TIME \~ GENDER**
+
+    For both groups, male and female. Male residuals follows the theoretical line more closely as compare female. female show a significant deviation at higher values as compared to male. Hence both show some issues at higher values despite the fact that residuals of male are close as compared to female.
+
+### CONCLUDSION AND RECOMMNEDATION :
+
+From the above Exploratory data Analysis of the the data set 'survival from malignant melanoma' we obtained the following :
+
+-   The data set is complete , as they are no missing values in our data set since all observation we recorded.
+
+-   The features in the data set wasn't in the right data type, specifically the categorical features (sex, status and ulcer). Transformation was done to put them to their correct data type.
+
+-   Every entry in the data set was entered correctly and in the right format.
+
+-   From the summary statistics, there exist outliers. age and thickness has outliers. Outliers removal is highly recommended in the preprocessing phase if we want to extend the project to build a machine learning algorithm, maybe a supervise learner to predict the patients who have ulcer or not.
+
+-   There exist a relationship between our feature which is good sign if we are building a model for this and the is no feature which is strongly related to one and other which is also good because we don't want our model to dependent on a given feature based on their strong correlation, Feature selection and feature engineering is highly recommended in the preprocessing phase so also to improve the accuracy of our machine learning model.
+
+-   Result from the hypothesis were good, except for relationship between gender of patient and their ages.
+
+-   The exist some abnormality on the distribution of the residual error since not all was normally distributed, caution to be taken when building our model. proper technique should be taken to prevent over fIting or under fitting. Regularization is highly recommended if any of this situation arises or increase the size of our data set.
